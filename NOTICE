@@ -1,0 +1,31 @@
+Crucible Community Edition
+Copyright 2026 Roundtable Labs Pty Ltd
+
+This product includes software developed by Roundtable Labs Pty Ltd.
+
+Licensed under the AGPL-3.0 (GNU Affero General Public License v3.0).
+
+For license details, see the LICENSE file included with this distribution.
+
+For complete notices, disclaimers, and attribution requirements, see NOTICE.md.
+
+--------------------------------------------------------------------------------
+
+THIRD-PARTY NOTICES
+
+This software may include or depend on third-party open source components.
+Please refer to the respective package managers (pip, npm) for individual
+license information of dependencies.
+
+--------------------------------------------------------------------------------
+
+PROPRIETARY CONTENT NOTICE
+
+Certain content in this distribution is proprietary and NOT covered by the
+AGPL-3.0 license. See PROMPTS_LICENSE.md for details on:
+- Official knight prompts and persona definitions
+- Knight seed data
+- System prompt templates
+
+For additional disclaimers, API usage responsibilities, and attribution
+requirements, see NOTICE.md.
