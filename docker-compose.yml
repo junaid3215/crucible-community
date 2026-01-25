@@ -1,0 +1,161 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=roundtable
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # SECURITY: Port exposure disabled by default for security.
+    # Services communicate via Docker internal networking (postgres:5432).
+    # Uncomment below ONLY if you need direct database access from host (e.g., for debugging).
+    # WARNING: Exposing ports creates a security risk - ensure firewall is configured!
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d roundtable"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # SECURITY: Port exposure disabled by default for security.
+    # Services communicate via Docker internal networking (redis:6379).
+    # Uncomment below ONLY if you need direct Redis access from host (e.g., for debugging).
+    # WARNING: Exposing ports creates a security risk - ensure firewall is configured!
+    # ports:
+    #   - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save "" --appendonly no --loglevel notice
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      dockerfile: service/Dockerfile
+    ports:
+      - "8000:8000"
+    labels:
+      - "com.roundtablelabs.product=Crucible"
+      - "com.roundtablelabs.edition=community"
+    environment:
+      - ROUNDTABLE_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/roundtable
+      - ROUNDTABLE_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - ROUNDTABLE_JWT_SECRET=${ROUNDTABLE_JWT_SECRET}
+      - ROUNDTABLE_JWT_REFRESH_SECRET=${ROUNDTABLE_JWT_REFRESH_SECRET}
+      - API_KEY_ENCRYPTION_KEY=${API_KEY_ENCRYPTION_KEY}
+      - ROUNDTABLE_COMMUNITY_AUTH_PASSWORD=${ROUNDTABLE_COMMUNITY_AUTH_PASSWORD}
+      - ROUNDTABLE_CORS_ORIGINS=http://localhost:3000
+      - ROUNDTABLE_OPENROUTER_API_KEY=${ROUNDTABLE_OPENROUTER_API_KEY}
+      - ROUNDTABLE_EDEN_AI_API_KEY=${ROUNDTABLE_EDEN_AI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - artifacts:/data/artifacts
+      - ./.env:/app/.env
+    command: >
+      sh -c "
+        echo 'Checking for .env file...' &&
+        if [ ! -f /app/.env ]; then
+          echo 'First-time setup: Generating secrets...' &&
+          chmod +x scripts/init_secrets.sh &&
+          scripts/init_secrets.sh
+        else
+          echo 'Found existing .env file'
+        fi &&
+        echo 'Validating environment variables...' &&
+        if python scripts/validate_env.py 2>&1; then
+          echo 'Environment validation completed successfully'
+        else
+          echo 'ERROR: Environment validation failed! Check logs above for details.'
+          echo 'The API server will not start until required environment variables are set.'
+          exit 1
+        fi &&
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Running database initialization...' &&
+        if python scripts/init_community_db.py 2>&1; then
+          echo 'Database initialization completed successfully'
+        else
+          echo 'ERROR: Database initialization failed! Check logs above for details.'
+          echo 'The API server will not start until initialization succeeds.'
+          exit 1
+        fi &&
+        echo 'Starting API server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+
+  worker:
+    build:
+      context: ./service
+      dockerfile: Dockerfile.worker
+    environment:
+      - ROUNDTABLE_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/roundtable
+      - ROUNDTABLE_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - ROUNDTABLE_JWT_SECRET=${ROUNDTABLE_JWT_SECRET}
+      - ROUNDTABLE_JWT_REFRESH_SECRET=${ROUNDTABLE_JWT_REFRESH_SECRET}
+      - API_KEY_ENCRYPTION_KEY=${API_KEY_ENCRYPTION_KEY}
+      - ROUNDTABLE_OPENROUTER_API_KEY=${ROUNDTABLE_OPENROUTER_API_KEY}
+      - ROUNDTABLE_EDEN_AI_KEY=${ROUNDTABLE_EDEN_AI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - artifacts:/data/artifacts
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2 --queues=debate,periodic
+
+  beat:
+    build:
+      context: ./service
+      dockerfile: Dockerfile.worker
+    environment:
+      - ROUNDTABLE_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/roundtable
+      - ROUNDTABLE_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - ROUNDTABLE_JWT_SECRET=${ROUNDTABLE_JWT_SECRET}
+      - ROUNDTABLE_JWT_REFRESH_SECRET=${ROUNDTABLE_JWT_REFRESH_SECRET}
+      - API_KEY_ENCRYPTION_KEY=${API_KEY_ENCRYPTION_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.workers.celery_app beat --loglevel=info
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - DOCKER_ENV=true
+      # Server-side backend calls: from inside the container, use Docker service name.
+      # (localhost:8000 in the frontend container does not reach the api service.)
+      # Intake fetches the user's OpenRouter key from /api/user/settings/openrouter-key
+      # (saved by the user in Settings).
+      - API_BASE_URL=http://api:8000
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  artifacts:
